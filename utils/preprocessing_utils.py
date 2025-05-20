@@ -3,6 +3,9 @@ import tqdm
 import os 
 import json 
 import numpy as np
+import random
+import sys
+from utils.training_config import TrainingConfig
 
 def parse_data():
     dataset_dir = "code_classification_dataset"
@@ -21,19 +24,17 @@ def get_raw_features(jsonElement):
 def get_raw_columns(jsonElement:dict):
     return [value for key,value in jsonElement.items()]
 
-def build_dataframe_from_json(json:list):
+def build_dataframe_from_json(json:list,config:TrainingConfig):
     properties = get_raw_features(json[0])
     data = [get_raw_columns(jsonElement) for jsonElement in json]
 
     dataframe = pd.DataFrame(columns=properties,data=data)
     dataframe["description_and_code"] = dataframe["prob_desc_description"] + " [SEP] " + dataframe["source_code"]
     
-    return dataframe 
+    dataframe["tags"] = dataframe["tags"].apply(lambda tags: filter_selected_tags(tags, config.tags))
 
-def add_comparison_operator(row):
-    comparison_ops = [">", ">=", "<=", "<"]
-    return row["description_and_code"].apply(
-    lambda text: any(op in text for op in comparison_ops)
+    dataframe = dataframe[dataframe["tags"].map(len) > 0]
+    return dataframe 
 
 def set_seed(seed):
     random.seed(seed)
@@ -41,3 +42,6 @@ def set_seed(seed):
 
 def get_rows_containing_label(label,dataframe):
     return dataframe[dataframe["tags"].apply(lambda tags : label in tags)]
+
+def filter_selected_tags(row, selected_tags):
+    return [tag for tag in row if tag in selected_tags]
