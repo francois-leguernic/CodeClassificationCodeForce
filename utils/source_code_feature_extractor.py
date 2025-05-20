@@ -70,7 +70,7 @@ class SourceCodeFeatureExtractor:
             r"\bexpected value\b", r"\bmean\b", r"\bstandard deviation\b",
             r"\bstochastic\b", r"\bprobabilistic\b", r"\bwith probability\b",
             r"\bexpected number\b",r"\bbernoulli\b",r"\bgaussian\b",r"\bchance\b"
-            ,r"\bdice\b",r"b\coin\b",r"\buniform\b"
+            ,r"\bdice\b",r"\bcoin\b",r"\buniform\b"
         ]
         pattern = re.compile("|".join(terms), re.IGNORECASE)
         return int(bool(pattern.search(text)))
