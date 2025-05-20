@@ -4,12 +4,15 @@ import os
 import json 
 import numpy as np
 import random
-import sys
 from utils.training_config import TrainingConfig
+import nltk
+from nltk.corpus import stopwords
+nltk.download('stopwords')
+stop_words = set(stopwords.words('english'))
 
 def parse_data():
     dataset_dir = "code_classification_dataset"
-    files = os.listdir(dataset_dir)
+    files = os.listdir(os.path.join(os.getcwd(),dataset_dir))
     jsonList = []
 
     for f in tqdm.tqdm(files):
@@ -45,3 +48,17 @@ def get_rows_containing_label(label,dataframe):
 
 def filter_selected_tags(row, selected_tags):
     return [tag for tag in row if tag in selected_tags]
+
+
+
+def get_most_frequent_words(df, n=20, lowercase=True):
+
+    all_words = []
+    for text in df["prob_desc_description"].dropna():
+        if lowercase:
+            text = text.lower()
+        words = re.findall(r"\b\w+\b", text)
+        filtered_words = [word for word in words if word not in stop_words and not word.isdigit()]
+        all_words.extend(filtered_words)
+    
+    return Counter(all_words).most_common(n)
