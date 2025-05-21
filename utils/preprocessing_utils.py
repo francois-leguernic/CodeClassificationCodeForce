@@ -57,10 +57,10 @@ def filter_selected_tags(row, selected_tags):
 
 
 
-def get_most_frequent_words(df, n=20, lowercase=True):
+def get_most_frequent_words(df, n=20, lowercase=True,column="prob_desc_description"):
 
     all_words = []
-    for text in df["prob_desc_description"].dropna():
+    for text in df[column].dropna():
         if lowercase:
             text = text.lower()
         words = re.findall(r"\b\w+\b", text)

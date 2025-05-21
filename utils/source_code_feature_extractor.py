@@ -4,11 +4,16 @@ import re
 class SourceCodeFeatureExtractor:
     def __init__(self):
         self.features = {
-            "has_math_terms": (self.has_math_terms_in_code,"source_code"),
+            #"has_math_terms": (self.has_math_terms_in_code,"source_code"),
             "num_loops": (self.count_loops,"source_code"),
             "has_comparison_operator": (self.has_comparison_operator,"source_code"),
-            "has_probability_terms_in_desc":(self.has_probability_terms,"prob_desc_description"),
-            "has_geometry_keywords":(self.contains_geometry_keywords,"source_code")
+            #"has_probability_terms_in_desc":(self.has_probability_terms,"prob_desc_description"),
+            #"has_geometry_keywords":(self.contains_geometry_keywords,"source_code")
+            "uses_modulo" : (self.uses_modulo,"source_code"),
+            "has_bitwise" : (self.uses_bitwise,"source_code"),
+            "uses_gcd" : (self.uses_gcd,"source_code"),
+            "uses_lcm" : (self.uses_lcm,"source_code"),
+            "uses_prime" : (self.uses_prime_words,"source_code")
         }
 
         self.features_to_keep = set()
@@ -85,9 +90,38 @@ class SourceCodeFeatureExtractor:
     def contains_geometry_keywords(self,text):
 
         GEOMETRY_KEYWORDS = ['point', 'points', 'coordinates', 'polygon', 'plane', 'line', 'segment', 'segments',
-        'x', 'y', 'r', 'radius', 'distance', 'area', 'triangle', 'circle']
+        'x', 'y', 'r', 'radius', 'distance', 'area', 'triangle', 'circle','sqrt', 'acos', 'atan2', 'math.pi'
+        'cos','sin','asin']
 
         text = str(text).lower()
         return int(any(kw in text for kw in GEOMETRY_KEYWORDS))
 
+
+    def uses_modulo(self, text):
+        # Capture % et le mot 'mod' seul ou accolé
+        return bool(re.search(r"%|\bmod\b", text))
+
+    def uses_gcd(self, code):
+        # Capture gcd(x, y), __gcd(x, y)
+        return bool(re.search(r"\b(?:__)?gcd\s*\(", code))
+
+    def uses_lcm(self, code):
+        # Capture lcm(x, y)
+        return bool(re.search(r"\blcm\s*\(", code))
+
+    def uses_pow(self, code):
+        # Capture ** et pow(x, y)
+        return bool(re.search(r"\*\*|\bpow\s*\(", code))
+
+    def uses_bitwise(self, code):
+        # Capture &, |, ^, ~, <<, >>
+        return bool(re.search(r"\b(?:<<|>>)\b|[&|^~]", code))
+
+    def uses_divisors(self, code): 
+        # Capture une division entière dans un range (ex: for i in range(n // 2))
+        return bool(re.search(r"\bfor\s+\w+\s+in\s+range\s*\(.*?//.*?\)", code))
+
+    def uses_prime_words(self, code): 
+        # Capture les mots "prime" ou "is_prime" insensibles à la casse
+        return bool(re.search(r"\bis_prime\b|\bprime\b", code, flags=re.I))
     

@@ -5,7 +5,7 @@ from utils.preprocessing_utils import build_dataframe_from_json, parse_data
 import argparse
 import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.preprocessing import MultiLabelBinarizer,MinMaxScaler
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report,f1_score
@@ -20,15 +20,17 @@ import os
 
 class ModelTrainer:
     def __init__(self, model = None, param_grid=None, use_grid_search=False, cv=3, scoring="f1_macro"):
-        self.model = model or LGBMClassifier(class_weight='balanced',random_state=42)
+        self.model = model or LGBMClassifier(class_weight='balanced',verbose=-1,random_state=42)
         self.param_grid = param_grid
         self.use_grid_search = use_grid_search
         self.cv = cv
         self.scoring = scoring
         self.best_model = None
         self.best_f1_score_macro = None
-        self.vectorizer = None
+        self.tfidvectorizerText = None
+        self.tfidvectorizerCode = None
         self.labelvectorizer = None
+        self.minmaxscaler = None 
 
     def train(self, X_train, y_train):
         print("Training model...")
@@ -67,11 +69,20 @@ class ModelTrainer:
         model_path = os.path.join(model_dir,"model.joblib")
         os.makedirs(model_dir, exist_ok=True)
         joblib.dump(self.best_model, model_path)
-        print(f"Model saved to {model_path}")
-        vectorizer_path= os.path.join(model_dir,"vectorizer.joblib")
-        joblib.dump(self.vectorizer, vectorizer_path)
+        vectorizer_text_path= os.path.join(model_dir,"vectorizer_text.joblib")
+        joblib.dump(self.tfidvectorizerText, vectorizer_text_path)
+        vectorizer_code_path= os.path.join(model_dir,"vectorizer_code.joblib")
+        joblib.dump(self.tfidvectorizerText, vectorizer_code_path)
         label_vectorizer_path = os.path.join(model_dir,"labelVectorizer.joblib")
         joblib.dump(self.labelvectorizer,label_vectorizer_path)
+        min_max_scaler_path = os.path.join(model_dir,"minmaxscaler.joblib")
+        joblib.dump(self.minmaxscaler,min_max_scaler_path)
+
+        print(f"Model saved to {model_path}")
+
+    
+    def save_datasets(self,df_train df_test):
+
 
 
 def main():
@@ -83,24 +94,33 @@ def main():
     
     config = TrainingConfig(tags=['math', 'graphs', 'strings', 'number theory', 'trees', 'geometry', 'games', 'probabilities'])
     
-    df = build_dataframe_from_json(parse_data(),config)
-
+    df = build_dataframe_from_json(parse_data(), config)
     
-    tfidf = TfidfVectorizer(max_features=2000, ngram_range=(1, 3),stop_words='english',
-          lowercase=True,max_df=0.8, min_df=5,sublinear_tf=True,strip_accents='unicode')
-    
-    X_tfidf = tfidf.fit_transform(df["description_and_code"])
+    tfidf_text = TfidfVectorizer(max_features=2000, ngram_range=(1, 3), stop_words='english', lowercase=True, 
+                            max_df=0.8, min_df=5, sublinear_tf=True, strip_accents='unicode')
 
+    X_text = tfidf_text.fit_transform(df['prob_desc_description'])
+
+    tfidf_code = TfidfVectorizer(max_features=300, ngram_range=(1, 3),stop_words='english',lowercase=True,max_df=0.8,
+        min_df=5, sublinear_tf=True, strip_accents='unicode')
+    
+    X_code = tfidf_code.fit_transform(df['source_code'])
+    
+    
+    scaler = MinMaxScaler()
+    df["scaled_difficulty"] = scaler.fit_transform(df[['difficulty']])
+     
     if args.extra_features:
         codeFeatureExtractor = SourceCodeFeatureExtractor()
         codeFeatureExtractor.transform(df)
-        #codeFeatureExtractor.add_feature_to_keep("difficulty")
+        codeFeatureExtractor.add_feature_to_keep("scaled_difficulty")
         extra_features = df[codeFeatureExtractor.get_training_features()]
+        print(f"adding extra features {codeFeatureExtractor.get_training_features()}")
         extra_features_clean = extra_features.astype(float)
         X_extra = csr_matrix(extra_features_clean.values)
-        X = hstack([X_tfidf,X_extra])
+        X = hstack([X_text,X_code,X_extra])
     else:
-        X = X_tfidf
+        X = hstack([X_text,X_code])
 
 
     
@@ -116,14 +136,16 @@ def main():
         "estimator__learning_rate": [0.05, 0.1],
     } if args.gridsearch else None
 
-    # Entraînement
     trainer = ModelTrainer(use_grid_search=args.gridsearch, param_grid=param_grid)
-    trainer.vectorizer = tfidf
+    trainer.tfidvectorizerText = tfidf_text
+    trainer.tfidvectorizerCode = tfidf_code
     trainer.labelvectorizer = mlb
+    trainer.minmaxscaler = scaler
     trainer.train(X_train, y_train)
     trainer.evaluate(X_test, y_test, label_names=mlb.classes_)
     trainer.save_model(args.model_type)
-
+    
+    
 
 if __name__ == "__main__":
     main()
