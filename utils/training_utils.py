@@ -55,7 +55,7 @@ def analyze_tag_confusions(y_true, y_pred, ordered_multi_labeled_classes):
     return confusions
 
 
-def bar_plot_confusion_1(confusion_dico):
+def bar_plot_confusion(confusion_dico):
     labels = list(confusion_dico.keys())
     fig,ax = plt.subplots(len(labels),1,figsize=(15,5*len(labels)))
 
