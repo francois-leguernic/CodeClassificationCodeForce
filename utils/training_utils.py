@@ -8,6 +8,7 @@ from sklearn.utils import shuffle
 import numpy as np
 import pandas as pd 
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
+import matplotlib.pyplot as plt
 
 
 def  train_and_return_model(dataframe,model):
@@ -54,6 +55,20 @@ def analyze_tag_confusions(y_true, y_pred, ordered_multi_labeled_classes):
     return confusions
 
 
+def bar_plot_confusion_1(confusion_dico):
+    labels = list(confusion_dico.keys())
+    fig,ax = plt.subplots(len(labels),1,figsize=(15,5*len(labels)))
+
+    for i in range(len(labels)):
+        confusions = confusion_dico[labels[i]]
+        ax[i].set_title(f"Confusion for label {labels[i]}")
+        ax[i].bar(list(confusions.index),list(confusions.values))
+        ax[i].set_xticklabels(confusions.index, rotation=45, ha='right')
+    
+    plt.tight_layout()
+    plt.show()
+
+
 def multilabel_stratified_split(X, y, test_size=0.2, random_state=42):
     splitter = MultilabelStratifiedShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
     for train_idx, test_idx in splitter.split(X, y):
@@ -84,3 +99,14 @@ def multilabel_oversample(X_train, y_train, min_count=50):
     X_train_os, y_train_os = shuffle(X_train_oversampled, y_train_oversampled, random_state=42)
 
     return X_train_os, y_train_os
+
+def reduce_math(df, target_count=150):
+    import pandas as pd 
+    only_math = df[df['tags'].apply(lambda tags: tags == ['math'])]
+    mixed_math = df[df['tags'].apply(lambda tags: 'math' in tags and tags != ['math'])]
+    others = df[df['tags'].apply(lambda tags: 'math' not in tags)]
+
+    
+    reduced_only_math = only_math.sample(n=target_count, random_state=42)
+    df_reduced = pd.concat([reduced_only_math, mixed_math, others], ignore_index=True)
+    return df_reduced

@@ -7,7 +7,8 @@ class SourceCodeFeatureExtractor:
             "has_math_terms": (self.has_math_terms_in_code,"source_code"),
             "num_loops": (self.count_loops,"source_code"),
             "has_comparison_operator": (self.has_comparison_operator,"source_code"),
-            "has_probability_terms_in_desc":(self.has_probability_terms,"prob_desc_description")
+            "has_probability_terms_in_desc":(self.has_probability_terms,"prob_desc_description"),
+            "has_geometry_keywords":(self.contains_geometry_keywords,"source_code")
         }
 
         self.features_to_keep = set()
@@ -80,5 +81,13 @@ class SourceCodeFeatureExtractor:
         for name, (func,col_name) in self.features.items():
             df[name] = df[col_name].apply(func)
         return df
-    
+
+    def contains_geometry_keywords(self,text):
+
+        GEOMETRY_KEYWORDS = ['point', 'points', 'coordinates', 'polygon', 'plane', 'line', 'segment', 'segments',
+        'x', 'y', 'r', 'radius', 'distance', 'area', 'triangle', 'circle']
+
+        text = str(text).lower()
+        return int(any(kw in text for kw in GEOMETRY_KEYWORDS))
+
     

@@ -28,6 +28,7 @@ class ModelTrainer:
         self.best_model = None
         self.best_f1_score_macro = None
         self.vectorizer = None
+        self.labelvectorizer = None
 
     def train(self, X_train, y_train):
         print("Training model...")
@@ -64,16 +65,19 @@ class ModelTrainer:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         model_dir = os.path.join("models", f"{model_type}_{timestamp}")
         model_path = os.path.join(model_dir,"model.joblib")
+        os.makedirs(model_dir, exist_ok=True)
         joblib.dump(self.best_model, model_path)
         print(f"Model saved to {model_path}")
         vectorizer_path= os.path.join(model_dir,"vectorizer.joblib")
         joblib.dump(self.vectorizer, vectorizer_path)
+        label_vectorizer_path = os.path.join(model_dir,"labelVectorizer.joblib")
+        joblib.dump(self.labelvectorizer,label_vectorizer_path)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Train a multilabel model  TF-IDF.")
     parser.add_argument("--gridsearch", action="store_true", help="Enable GridSearchCV")
-    parser.add_argument("--extra_features",default=None,help="Aditional features to concatenate to TF-IDF vectors")
+    parser.add_argument("--extra_features",action="store_true",help="Aditional features to concatenate to TF-IDF vectors")
     parser.add_argument("--model_type",help="Model type that will be serialized")
     args = parser.parse_args()
     
@@ -114,7 +118,8 @@ def main():
 
     # Entraînement
     trainer = ModelTrainer(use_grid_search=args.gridsearch, param_grid=param_grid)
-    trainer.vectorizer = mlb
+    trainer.vectorizer = tfidf
+    trainer.labelvectorizer = mlb
     trainer.train(X_train, y_train)
     trainer.evaluate(X_test, y_test, label_names=mlb.classes_)
     trainer.save_model(args.model_type)

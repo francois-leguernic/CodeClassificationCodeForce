@@ -9,16 +9,22 @@ import nltk
 from nltk.corpus import stopwords
 nltk.download('stopwords')
 stop_words = set(stopwords.words('english'))
+from collections import Counter
+import re 
 
-def parse_data():
-    dataset_dir = "code_classification_dataset"
-    files = os.listdir(os.path.join(os.getcwd(),dataset_dir))
+def parse_data(datasetDir=None):
+    if datasetDir is None:
+       dataset_dir_name = "code_classification_dataset"
+       datasetDir = os.path.join(os.getcwd(),dataset_dir_name)
+       files = os.listdir(datasetDir)
+    else:
+        files = os.listdir(datasetDir)
     jsonList = []
-
+ 
     for f in tqdm.tqdm(files):
-        with open(os.path.join(os.getcwd(),dataset_dir,f),'r',encoding="utf8") as jsonFile:
-            data = json.load(jsonFile)
-            jsonList.append(data)
+            with open(os.path.join(datasetDir,f),'r',encoding="utf8") as jsonFile:
+                data = json.load(jsonFile)
+                jsonList.append(data)
     return jsonList
 
 def get_raw_features(jsonElement):
