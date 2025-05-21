@@ -98,30 +98,23 @@ class SourceCodeFeatureExtractor:
 
 
     def uses_modulo(self, text):
-        # Capture % et le mot 'mod' seul ou accolé
         return bool(re.search(r"%|\bmod\b", text))
 
     def uses_gcd(self, code):
-        # Capture gcd(x, y), __gcd(x, y)
         return bool(re.search(r"\b(?:__)?gcd\s*\(", code))
 
     def uses_lcm(self, code):
-        # Capture lcm(x, y)
         return bool(re.search(r"\blcm\s*\(", code))
 
     def uses_pow(self, code):
-        # Capture ** et pow(x, y)
         return bool(re.search(r"\*\*|\bpow\s*\(", code))
 
     def uses_bitwise(self, code):
-        # Capture &, |, ^, ~, <<, >>
         return bool(re.search(r"\b(?:<<|>>)\b|[&|^~]", code))
 
     def uses_divisors(self, code): 
-        # Capture une division entière dans un range (ex: for i in range(n // 2))
         return bool(re.search(r"\bfor\s+\w+\s+in\s+range\s*\(.*?//.*?\)", code))
 
     def uses_prime_words(self, code): 
-        # Capture les mots "prime" ou "is_prime" insensibles à la casse
         return bool(re.search(r"\bis_prime\b|\bprime\b", code, flags=re.I))
     

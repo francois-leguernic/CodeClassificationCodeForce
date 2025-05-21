@@ -69,13 +69,13 @@ def bar_plot_confusion(confusion_dico):
     plt.show()
 
 
-def multilabel_stratified_split(X, y, test_size=0.2, random_state=42):
+def multilabel_stratified_split(X, y,all_indices,test_size=0.2, random_state=42):
     splitter = MultilabelStratifiedShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
     for train_idx, test_idx in splitter.split(X, y):
-        X_train, X_test = X[train_idx], X[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
-    return X_train, X_test, y_train, y_test
-
+        train_idx = np.array(all_indices)[train_idx]
+        test_idx = np.array(all_indices)[test_idx]
+        return train_idx, test_idx
+    return 
 
 
 def multilabel_oversample(X_train, y_train, min_count=50):

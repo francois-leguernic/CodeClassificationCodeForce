@@ -9,6 +9,10 @@ from sklearn.preprocessing import MultiLabelBinarizer,MinMaxScaler
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report,f1_score
+from sklearn import set_config
+set_config(enable_metadata_routing=True)
+import warnings
+warnings.filterwarnings("ignore")
 from scipy.sparse import hstack, csr_matrix
 from utils.training_config import TrainingConfig
 from utils.source_code_feature_extractor import SourceCodeFeatureExtractor
@@ -30,7 +34,10 @@ class ModelTrainer:
         self.tfidvectorizerText = None
         self.tfidvectorizerCode = None
         self.labelvectorizer = None
-        self.minmaxscaler = None 
+        self.minmaxscaler = None
+        self.rawdf = None
+        self.idx_train = None
+        self.idx_test = None 
 
     def train(self, X_train, y_train):
         print("Training model...")
@@ -40,7 +47,7 @@ class ModelTrainer:
             print("Using GridSearchCV...")
             clf = GridSearchCV(clf, self.param_grid, cv=self.cv, scoring=self.scoring, verbose=2, n_jobs=-1)
 
-        clf.fit(X_train, y_train)
+        clf.fit(X_train, y_train,feature_name=None)
 
         if self.use_grid_search:
             print("Best Params:", clf.best_params_)
@@ -77,11 +84,16 @@ class ModelTrainer:
         joblib.dump(self.labelvectorizer,label_vectorizer_path)
         min_max_scaler_path = os.path.join(model_dir,"minmaxscaler.joblib")
         joblib.dump(self.minmaxscaler,min_max_scaler_path)
-
+        self.save_datasets(model_dir)
         print(f"Model saved to {model_path}")
 
     
-    def save_datasets(self,df_train df_test):
+    def save_datasets(self,model_dir):
+        df_train = self.rawdf.iloc[self.idx_train]
+        df_test = self.rawdf.iloc[self.idx_test]
+        df_train.to_csv(os.path.join(model_dir,"train_data.csv"), index=False, encoding="utf-8")
+        df_test.to_csv(os.path.join(model_dir,"test_data.csv"), index=False, encoding="utf-8")
+
 
 
 
@@ -94,7 +106,8 @@ def main():
     
     config = TrainingConfig(tags=['math', 'graphs', 'strings', 'number theory', 'trees', 'geometry', 'games', 'probabilities'])
     
-    df = build_dataframe_from_json(parse_data(), config)
+    rawdf = build_dataframe_from_json(parse_data(), config)
+    df = rawdf.copy()
     
     tfidf_text = TfidfVectorizer(max_features=2000, ngram_range=(1, 3), stop_words='english', lowercase=True, 
                             max_df=0.8, min_df=5, sublinear_tf=True, strip_accents='unicode')
@@ -127,8 +140,8 @@ def main():
     mlb = MultiLabelBinarizer()
     y = mlb.fit_transform(df["tags"])
 
-   
-    X_train, X_test, y_train, y_test = multilabel_stratified_split(X, y)
+    train_idx, test_idx = multilabel_stratified_split(X,y,list(range(len(df))),test_size=0.2)
+    X_train,y_train, X_test,y_test = X[train_idx],y[train_idx],X[test_idx],y[test_idx]
 
     param_grid = {
         "estimator__n_estimators": [100, 300],
@@ -141,6 +154,9 @@ def main():
     trainer.tfidvectorizerCode = tfidf_code
     trainer.labelvectorizer = mlb
     trainer.minmaxscaler = scaler
+    trainer.rawdf = rawdf
+    trainer.idx_train = train_idx
+    trainer.idx_test = test_idx
     trainer.train(X_train, y_train)
     trainer.evaluate(X_test, y_test, label_names=mlb.classes_)
     trainer.save_model(args.model_type)
