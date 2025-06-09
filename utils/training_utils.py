@@ -10,7 +10,9 @@ import pandas as pd
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 import matplotlib.pyplot as plt
 
-
+"""
+CLI for training model 
+"""
 def  train_and_return_model(dataframe,model):
         codeFeatureExtractor = SourceCodeFeatureExtractor()
         codeFeatureExtractor.transform(dataframe)
