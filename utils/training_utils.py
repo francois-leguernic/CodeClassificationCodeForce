@@ -32,12 +32,15 @@ def  train_and_return_model(dataframe,model):
 
         return model
 
-
+"""
+Returns all the tags that are present in a false-negative prediction for all the tags
+"""
 def analyze_tag_confusions(y_true, y_pred, ordered_multi_labeled_classes):
     confusions = {}
-
+    confusion_matrix = multilabel_confusion_matrix(y_true, y_pred)
+    
     for idx, tag in enumerate(ordered_multi_labeled_classes):
-        cm = multilabel_confusion_matrix(y_true, y_pred)[idx]
+        cm = confusion_matrix[idx]
         tn, fp, fn, tp = cm.ravel()
         
         if fn > 0:
