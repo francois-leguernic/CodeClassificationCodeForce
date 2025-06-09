@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt 
 from collections import Counter
 
+"""
+Plots the repartition of tags in the dataset
+"""
 def plot_tags_names_repartition(dataFrameColumn,figsize=(15,15)):
     tagCounter = Counter(tag for tags in dataFrameColumn for tag in tags)
     tagRepartition= tagCounter.most_common()
